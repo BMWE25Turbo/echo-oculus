@@ -5,3 +5,6 @@ pyyaml
 geopy
 schedule
 beautifulsoup4
+pydub
+openai-whisper
+ffmpeg-python
