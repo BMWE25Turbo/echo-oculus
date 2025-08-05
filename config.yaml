@@ -1,0 +1,9 @@
+echo_oculus:
+  gps_device: OwnTracks
+  alert_radius_miles: 2.5
+  cop_cooldown_minutes: 30
+  voice_alerts: true
+  map_overlay_format: geojson
+  logger:
+    format: verbose
+    log_retention_days: 180
