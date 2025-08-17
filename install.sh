@@ -3,60 +3,51 @@ set -euo pipefail
 
 echo "[EO] One-shot setup starting…"
 
-# --- 0) Sanity checks ---
+# 0) Ensure Python
 if ! command -v python3 >/dev/null; then
-  echo "[EO] Python3 not found. Installing…"
   sudo apt-get update
   sudo apt-get install -y python3 python3-venv python3-pip
 fi
 
-# --- 1) System packages needed by EO (Phase 1/1.5) ---
-echo "[EO] Installing system packages (ffmpeg, nvme/smart tools, build essentials)…"
+# 1) System packages
 sudo apt-get update
-sudo apt-get install -y \
-  ffmpeg \
-  smartmontools \
-  nvme-cli \
-  build-essential
+sudo apt-get install -y ffmpeg smartmontools nvme-cli build-essential
 
-# --- 2) Move into repo root (this script should live at the repo root) ---
+# 2) Repo root
 REPO_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$REPO_DIR"
 
-# --- 3) Python virtualenv ---
-if [ ! -d "venv" ]; then
-  echo "[EO] Creating virtualenv…"
-  python3 -m venv venv
-fi
+# 3) venv + Python deps
+[ -d venv ] || python3 -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
 pip install --upgrade pip wheel
-
-# --- 4) Python deps (runtime + dev) ---
-echo "[EO] Installing Python dependencies…"
 pip install -r requirements.txt
-if [ -f requirements-dev.txt ]; then
-  pip install -r requirements-dev.txt
-fi
+[ -f requirements-dev.txt ] && pip install -r requirements-dev.txt
 
-# --- 5) Log directories for rotation/archiving (from config.yaml defaults) ---
+# 4) Log dirs to match config.yaml
 LOG_ROOT="/var/log/echo-oculus"
 ARCHIVE_DIR="${LOG_ROOT}/archive"
-echo "[EO] Ensuring log directories exist: ${LOG_ROOT} and ${ARCHIVE_DIR}"
 sudo mkdir -p "$ARCHIVE_DIR"
-# Allow 'pi' user to write logs (adjust user if needed)
-if id -u pi >/dev/null 2>&1; then
-  sudo chown -R pi:pi "$LOG_ROOT"
+# allow 'pi' to write (change if your user isn't 'pi')
+if id -u pi >/dev/null 2>&1; then sudo chown -R pi:pi "$LOG_ROOT"; fi
+
+# 5) Install + enable systemd units (auto-start + SSD checks)
+if [ -f deploy/echo-oculus.service ]; then
+  sudo cp deploy/echo-oculus.service /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now echo-oculus
+  echo "[EO] Enabled service: echo-oculus"
 fi
 
-# --- 6) Quick tips / next steps ---
-echo
+if [ -f deploy/ssd-health.service ] && [ -f deploy/ssd-health.timer ]; then
+  sudo cp deploy/ssd-health.service /etc/systemd/system/
+  sudo cp deploy/ssd-health.timer /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now ssd-health.timer
+  echo "[EO] Enabled timer: ssd-health.timer"
+fi
+
 echo "[EO] Setup complete ✅"
-echo "Next steps:"
-echo "  1) Edit config.yaml if needed (logger paths already created)."
-echo "  2) Activate venv:    source venv/bin/activate"
-echo "  3) Run EO:           python3 main.py"
-echo
-echo "Optional (systemd):"
-echo "  - I can generate deploy/echo-oculus.service so EO starts on boot."
-echo
+echo "Logs live in: $LOG_ROOT"
+
