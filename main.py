@@ -5,6 +5,7 @@ import gzip
 import shutil
 from glob import glob
 from datetime import datetime, timedelta
+from queue import Queue, Empty
 
 from modules.alert_engine import AlertEngine
 from modules.data_sources import DataSources
@@ -12,8 +13,8 @@ from modules.gps_logger import GPSLogger
 from modules.sd_monitor import check_sd_usage  # ✅ SD check
 from modules.utils import load_config
 
-# ---- Optional: audio test (Phase 1.5 opt path) ----
-from modules.audio_transcriber import transcribe_scanner_audio  # ✅ Audio test import
+# ---- Optional manual test import (kept) ----
+from modules.audio_transcriber import transcribe_scanner_audio, ScannerAudioWorker
 
 
 # ------------------------------
@@ -154,6 +155,31 @@ def main():
     data_sources = DataSources(config)
     alert_engine = AlertEngine(config)
 
+    # --- NEW: transient audio hit queue + background worker ---
+    audio_q = Queue(maxsize=1024)
+
+    def _on_audio_event(ev: dict):
+        """
+        Convert scanner-audio hit into a normalized report for the pipeline.
+        We do NOT attach audio; only short text snippet + confidence.
+        """
+        report = {
+            "source": "scanner-audio",
+            "ts": ev.get("timestamp"),
+            "lat": None,                 # audio has no lat/lon
+            "lon": None,
+            "type": "police",
+            "msg": f"audio:{ev.get('match')}",
+            "confidence": float(ev.get("confidence", 0.6)),
+        }
+        try:
+            audio_q.put_nowait(report)
+        except Exception:
+            pass
+
+    audio_worker = ScannerAudioWorker(config, _on_audio_event)
+    audio_worker.start()
+
     last_sd_check = datetime.utcnow()
     last_log_maint = datetime.utcnow()
 
@@ -161,7 +187,23 @@ def main():
         while True:
             # ---- Core pipeline ----
             location = gps_logger.get_location()
+
+            # Drain any audio hits (non-blocking)
+            audio_reports = []
+            try:
+                while True:
+                    audio_reports.append(audio_q.get_nowait())
+            except Empty:
+                pass
+
+            # Fetch other feeds
             reports = data_sources.get_all_reports(location)
+
+            # Merge audio hits
+            if audio_reports:
+                reports.extend(audio_reports)
+
+            # Score/process
             alert_engine.process(location, reports)
 
             # ---- SD/Storage health every 30 minutes ----
@@ -193,17 +235,18 @@ def main():
         logging.getLogger(__name__).exception("Fatal error in main loop: %s", e)
 
 
-# ✅ Optional test route
+# ✅ Optional manual test route remains
 if __name__ == "__main__":
-    run_audio_test = False  # ← Flip to True to run scanner audio test only
+    run_audio_test = False  # ← Flip to True to run scanner audio test only (manual)
     if run_audio_test:
         print("[TEST MODE] Running audio transcription scan...")
         try:
             audio_results = transcribe_scanner_audio()
             for match in audio_results:
-                print(f"[MATCH] {match['match']} at {match['timestamp']} - {match['transcript'][:60]}...")
+                print(f"[MATCH] {match['match']} at {match['timestamp']} - {match['transcript_snippet'][:60]}...")
             print(f"[TEST DONE] Total matches: {len(audio_results)}\n")
         except Exception as e:
             print(f"[TEST ERROR] {e}")
     else:
         main()
+
