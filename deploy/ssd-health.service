@@ -1,0 +1,8 @@
+[Unit]
+Description=SSD/NVMe health check for Echo Oculus
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/pi/echo-oculus
+User=pi
+ExecStart=/home/pi/echo-oculus/venv/bin/python3 -m modules.sd_monitor --full
