@@ -1,0 +1,11 @@
+# --- Testing ---
+pytest==8.3.2
+pytest-cov==5.0.0
+
+# --- Linting / Formatting ---
+black==24.8.0
+flake8==7.1.1
+mypy==1.11.2
+
+# --- Dev utilities ---
+ipython==8.27.0
