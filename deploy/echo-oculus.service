@@ -1,0 +1,15 @@
+[Unit]
+Description=Echo Oculus
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/pi/echo-oculus
+ExecStart=/home/pi/echo-oculus/venv/bin/python3 /home/pi/echo-oculus/main.py
+User=pi
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
