@@ -35,6 +35,18 @@ echo_oculus:
     amperage_min_a: 4.5
     monitor_power: true
 
+  # --- Automatic, transient scanner-audio worker (Phase 1.5) ---
+  scanner_audio:
+    enabled: true
+    interval_s: 60           # run ~every minute
+    chunk_s: 20              # ~20s capture per run
+    model: tiny              # tiny|base|small; tiny = fastest on Pi
+    streams:
+      - "https://example-broadcastify-feed.com/live.mp3"
+    legal:
+      tos_compliant_only: true
+      transient_only: true   # raw audio is always deleted
+
   # Placeholders for later phases (leave off for now)
   ml:
     enabled: false
