@@ -5,51 +5,59 @@ echo_oculus:
   voice_alerts: true
   map_overlay_format: geojson
 
-  feeds:                 # Phase 1 + 1.5 (live sources)
+  feeds:
     waze: true
     twitter: true
     reddit: true
-    scanner: optional    # set to true when scanner integration enabled
+    scanner: optional
 
+  # --- Logging: rotation + archive + retention (ACTIVE) ---
   logger:
-    format: verbose
-    log_retention_days: 180
-    archive_path: /var/log/echo_oculus/archive   # Phase 1 scaffolding for long-term storage
+    format: verbose                 # minimal | verbose | json
+    root_dir: /var/log/echo-oculus  # live logs go here
+    archive_dir: /var/log/echo-oculus/archive   # rotated logs moved here
+    file: echo-oculus.log           # current log filename in root_dir
+    rotate_when: midnight           # time-based rotation (midnight)
+    rotate_backup_count: 14         # keep 14 daily logs in root_dir
+    compress_archives: true         # gzip the rotated files in archive_dir
+    log_retention_days: 180         # hard delete anything older than this in archive_dir
+    console: true                   # also log to stdout (useful during dev)
 
-  reliability:           # Phase 1 baseline
+  reliability:
     watchdog_enabled: true
     auto_reconnect: true
     service_warning_protocol: true
-    sd_trim_strategy: oldest_first   # Phase 1.5 prep
-    min_years_preserve: 3            # keep last 2–3 years logs by default
+    sd_trim_strategy: oldest_first
+    min_years_preserve: 3
 
-  hardware:              # Phase 1 baseline
+  hardware:
     voltage_min_v: 4.8
     amperage_min_a: 4.5
     monitor_power: true
 
-  ml:                    # Phase 2 placeholder
+  # Placeholders for later phases (leave off for now)
+  ml:
     enabled: false
-    backend: rule_based   # fallback when ML off
-    stats_widget: false   # enabled in Phase 2 with Hailo
+    backend: rule_based
+    stats_widget: false
 
-  dashboard:             # Phase 2 placeholder
+  dashboard:
     enabled: false
     theme: dark
-    widgets: []           # Phase 2 will add map, alerts, stats
+    widgets: []
 
-  wot_res:               # Phase 3 placeholder
+  wot_res:
     enabled: false
     eval_rules: default
     hazard_tracking: false
 
-  backup:                # Phase 2.5 placeholder
+  backup:
     enabled: false
     backup_path: /mnt/external_drive
 
-  about:                 # Phase 1 baseline
+  about:
     summary: >
       Echo Oculus cross-references public safety data with your GPS location
       to notify you of nearby police activity and encourage safer driving.
-      This system does not interfere with law enforcement, block signals,
-      or promote speeding.
+      This system does not interfere with law enforcement.
+
