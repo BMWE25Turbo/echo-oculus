@@ -4,6 +4,52 @@ echo_oculus:
   cop_cooldown_minutes: 30
   voice_alerts: true
   map_overlay_format: geojson
+
+  feeds:                 # Phase 1 + 1.5 (live sources)
+    waze: true
+    twitter: true
+    reddit: true
+    scanner: optional    # set to true when scanner integration enabled
+
   logger:
     format: verbose
     log_retention_days: 180
+    archive_path: /var/log/echo_oculus/archive   # Phase 1 scaffolding for long-term storage
+
+  reliability:           # Phase 1 baseline
+    watchdog_enabled: true
+    auto_reconnect: true
+    service_warning_protocol: true
+    sd_trim_strategy: oldest_first   # Phase 1.5 prep
+    min_years_preserve: 3            # keep last 2–3 years logs by default
+
+  hardware:              # Phase 1 baseline
+    voltage_min_v: 4.8
+    amperage_min_a: 4.5
+    monitor_power: true
+
+  ml:                    # Phase 2 placeholder
+    enabled: false
+    backend: rule_based   # fallback when ML off
+    stats_widget: false   # enabled in Phase 2 with Hailo
+
+  dashboard:             # Phase 2 placeholder
+    enabled: false
+    theme: dark
+    widgets: []           # Phase 2 will add map, alerts, stats
+
+  wot_res:               # Phase 3 placeholder
+    enabled: false
+    eval_rules: default
+    hazard_tracking: false
+
+  backup:                # Phase 2.5 placeholder
+    enabled: false
+    backup_path: /mnt/external_drive
+
+  about:                 # Phase 1 baseline
+    summary: >
+      Echo Oculus cross-references public safety data with your GPS location
+      to notify you of nearby police activity and encourage safer driving.
+      This system does not interfere with law enforcement, block signals,
+      or promote speeding.
