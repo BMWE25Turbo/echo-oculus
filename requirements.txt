@@ -1,10 +1,22 @@
-flask
-requests
-paho-mqtt
-pyyaml
-geopy
-schedule
-beautifulsoup4
-pydub
-openai-whisper
-ffmpeg-python
+# --- Core Web + API ---
+flask==3.0.3
+requests==2.32.3
+pyyaml==6.0.2
+
+# --- Messaging + GPS ---
+paho-mqtt==2.1.0
+geopy==2.4.1
+
+# --- Scheduling / Tasks ---
+schedule==1.2.1
+
+# --- Scraping + Feeds ---
+beautifulsoup4==4.12.3
+
+# --- Audio Processing + Whisper ---
+pydub==0.25.1
+openai-whisper==20231117
+ffmpeg-python==0.2.0
+
+# --- Logging / Rotation helpers ---
+python-json-logger==2.0.7
