@@ -28,8 +28,12 @@ def _configure_logging(cfg: dict):
     """
     Configure root logger with console + timed rotating file.
     Rotation: midnight; Archives: gzipped into archive_dir; Retention purge by days.
+    Enforces a floor from reliability.min_years_preserve (if present).
     """
-    logger_cfg = (cfg.get("echo_oculus", {}) or {}).get("logger", {}) or {}
+    eo = (cfg.get("echo_oculus", {}) or {})
+    logger_cfg = (eo.get("logger") or {})
+    rel_cfg = (eo.get("reliability") or {})
+
     fmt = logger_cfg.get("format", "verbose")
     console_on = bool(logger_cfg.get("console", True))
 
@@ -39,7 +43,15 @@ def _configure_logging(cfg: dict):
     rotate_when = logger_cfg.get("rotate_when", "midnight")
     backup_count = int(logger_cfg.get("rotate_backup_count", 14))
     compress_archives = bool(logger_cfg.get("compress_archives", True))
-    retention_days = int(logger_cfg.get("log_retention_days", 180))
+    retention_days_cfg = int(logger_cfg.get("log_retention_days", 180))
+
+    # Optional floor (e.g., 2–3 years) from reliability.min_years_preserve
+    min_years_preserve = rel_cfg.get("min_years_preserve")
+    if isinstance(min_years_preserve, (int, float)) and min_years_preserve > 0:
+        floor_days = int(min_years_preserve * 365)
+        retention_days = max(retention_days_cfg, floor_days)
+    else:
+        retention_days = retention_days_cfg
 
     _ensure_dir(root_dir)
     _ensure_dir(archive_dir)
@@ -89,8 +101,10 @@ def _configure_logging(cfg: dict):
         "retention_days": retention_days,
     }
     logging.getLogger(__name__).info(
-        "Logging to %s, rotate=%s, keep=%d, archive=%s (compress=%s, retention=%dd)",
-        fh_path, rotate_when, backup_count, archive_dir, compress_archives, retention_days
+        "Logging to %s, rotate=%s, keep=%d, archive=%s (compress=%s, retention=%dd; cfg=%dd, floor=%s)",
+        fh_path, rotate_when, backup_count, archive_dir, compress_archives, retention_days,
+        retention_days_cfg,
+        f"{min_years_preserve}y" if min_years_preserve else "none",
     )
 
 def _log_maintenance():
@@ -249,4 +263,5 @@ if __name__ == "__main__":
             print(f"[TEST ERROR] {e}")
     else:
         main()
+
 
