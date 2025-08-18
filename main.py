@@ -13,7 +13,7 @@ from modules.gps_logger import GPSLogger
 from modules.sd_monitor import check_sd_usage  # ✅ SD check
 from modules.utils import load_config
 
-# ---- Optional manual test import (kept) ----
+# ---- Transient scanner-audio worker (automatic) ----
 from modules.audio_transcriber import transcribe_scanner_audio, ScannerAudioWorker
 
 
@@ -155,7 +155,7 @@ def main():
     data_sources = DataSources(config)
     alert_engine = AlertEngine(config)
 
-    # --- NEW: transient audio hit queue + background worker ---
+    # --- transient audio hit queue + background worker ---
     audio_q = Queue(maxsize=1024)
 
     def _on_audio_event(ev: dict):
