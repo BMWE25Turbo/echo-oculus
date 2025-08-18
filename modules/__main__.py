@@ -1,10 +1,5 @@
-# modules/__main__.py
-
-from .scanner import run_all_scanners
+# Allow: python -m modules to quick-run EO main loop
+from main import main
 
 if __name__ == "__main__":
-    print("Running Echo Oculus scanners...")
-    results = run_all_scanners()
-    print(f"Collected {len(results)} alerts:")
-    for alert in results:
-        print(alert)
+    main()
