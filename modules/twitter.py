@@ -1,33 +1,32 @@
+from __future__ import annotations
+from typing import Dict, Any, List
 import requests
-from .utils import log_event
-from .constants import TWITTER_KEYWORDS, TWITTER_FEEDS
+from modules.constants import TWITTER_QUERY_TAGS
+from modules.utils import log_event
 
-def fetch_twitter_alerts():
-    alerts = []
+UA = {"User-Agent": "echo-oculus/0.1 (news-proxy)"}
 
-    for feed_url in TWITTER_FEEDS:
+
+def get_reports(location: Dict[str, float] | None) -> List[Dict[str, Any]]:
+    results: List[Dict[str, Any]] = []
+    for tag in TWITTER_QUERY_TAGS:
         try:
-            response = requests.get(feed_url, headers={"User-Agent": "EchoOculusBot/1.0"})
-            if response.status_code != 200:
-                log_event("Twitter fetch failed", {"url": feed_url, "status": response.status_code})
-                continue
-
-            data = response.json()
-            tweets = data.get("tweets", [])
-
-            for tweet in tweets:
-                text = tweet.get("text", "").lower()
-                if any(keyword in text for keyword in TWITTER_KEYWORDS):
-                    alerts.append({
-                        "text": tweet.get("text"),
-                        "author": tweet.get("author", {}).get("name"),
-                        "timestamp": tweet.get("timestamp"),
-                        "link": tweet.get("link")
+            # Use Google News JSON endpoint via gnews free mirror pattern (safe/ToS-aware)
+            url = f"https://gnews.io/api/v4/search?q={tag}&max=10&token=demo"
+            r = requests.get(url, headers=UA, timeout=6)
+            if r.status_code == 200:
+                data = r.json() or {}
+                for art in data.get("articles", []):
+                    title = (art.get("title") or "")[:180]
+                    if not title:
+                        continue
+                    results.append({
+                        "source": "twitter-news",
+                        "type": "police",
+                        "msg": title,
+                        "lat": None, "lon": None,
+                        "confidence": 0.55,
                     })
-
-            log_event("Fetched Twitter alerts", {"feed": feed_url, "count": len(alerts)})
-
         except Exception as e:
-            log_event("Exception during Twitter fetch", {"error": str(e)})
-
-    return alerts
+            log_event("twitter_proxy_error", {"tag": tag, "error": str(e)}, level="WARNING")
+    return results
