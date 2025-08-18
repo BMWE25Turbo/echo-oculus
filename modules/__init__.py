@@ -1,1 +1,2 @@
-# Needed to make 'modules' a proper package
+# Makes "modules" a package.
+
