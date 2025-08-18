@@ -29,8 +29,9 @@ pip install -r requirements.txt
 LOG_ROOT="/var/log/echo-oculus"
 ARCHIVE_DIR="${LOG_ROOT}/archive"
 sudo mkdir -p "$ARCHIVE_DIR"
-# allow 'pi' to write (change if your user isn't 'pi')
-if id -u pi >/dev/null 2>&1; then sudo chown -R pi:pi "$LOG_ROOT"; fi
+# allow the current user (or 'pi') to write
+USER_NAME="${SUDO_USER:-$(whoami)}"
+sudo chown -R "$USER_NAME":"$USER_NAME" "$LOG_ROOT" || true
 
 # 5) Install + enable systemd units (auto-start + SSD checks)
 if [ -f deploy/echo-oculus.service ]; then
@@ -50,4 +51,3 @@ fi
 
 echo "[EO] Setup complete ✅"
 echo "Logs live in: $LOG_ROOT"
-
