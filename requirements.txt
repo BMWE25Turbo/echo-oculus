@@ -12,6 +12,7 @@ schedule==1.2.1
 
 # --- Scraping + Feeds ---
 beautifulsoup4==4.12.3
+feedparser==6.0.11          # Optional: parsing RSS/Atom feeds directly
 
 # --- Audio Processing + Whisper ---
 pydub==0.25.1
@@ -21,3 +22,13 @@ numpy==1.26.4
 
 # --- Logging / Rotation helpers ---
 python-json-logger==2.0.7
+
+# --- Optional: Async + Performance ---
+uvicorn==0.30.3             # Optional: async web server if you migrate to FastAPI
+fastapi==0.115.0            # Optional: lightweight alternative to Flask
+aiohttp==3.10.5             # Optional: async HTTP client
+tenacity==9.0.0             # Optional: retry logic for fragile APIs
+
+# --- Optional: Data / Storage ---
+sqlalchemy==2.0.34          # Optional: database ORM (future stateful storage)
+redis==5.0.8                # Optional: caching / queue backend
