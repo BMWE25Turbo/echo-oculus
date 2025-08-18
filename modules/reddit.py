@@ -1,33 +1,38 @@
+from __future__ import annotations
+import re
+from typing import Dict, Any, List
 import requests
-from .utils import log_event
-from .constants import REDDIT_KEYWORDS, REDDIT_FEEDS
 
-def fetch_reddit_alerts():
-    alerts = []
+from modules.constants import REDDIT_SUBS
+from modules.utils import log_event
 
-    for feed_url in REDDIT_FEEDS:
+UA = {"User-Agent": "echo-oculus/0.1 (public-rss-only)"}
+
+
+def _parse_items(feed_json: Dict[str, Any], sub: str) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for child in (feed_json.get("data", {}) or {}).get("children", []):
+        d = child.get("data", {})
+        title = d.get("title", "")
+        if re.search(r"\b(police|cop|speed\s*trap|checkpoint)\b", title, re.I):
+            out.append({
+                "source": "reddit",
+                "type": "police",
+                "msg": title[:180],
+                "lat": None, "lon": None,
+                "confidence": 0.6,
+            })
+    return out
+
+
+def get_reports(location: Dict[str, float] | None) -> List[Dict[str, Any]]:
+    results: List[Dict[str, Any]] = []
+    for sub in REDDIT_SUBS:
         try:
-            response = requests.get(feed_url, headers={"User-Agent": "EchoOculusBot/1.0"})
-            if response.status_code != 200:
-                log_event("Reddit fetch failed", {"url": feed_url, "status": response.status_code})
-                continue
-
-            data = response.json()
-            posts = data.get("data", {}).get("children", [])
-
-            for post in posts:
-                title = post["data"].get("title", "").lower()
-                if any(keyword in title for keyword in REDDIT_KEYWORDS):
-                    alerts.append({
-                        "title": post["data"].get("title"),
-                        "url": post["data"].get("url"),
-                        "subreddit": post["data"].get("subreddit"),
-                        "timestamp": post["data"].get("created_utc")
-                    })
-
-            log_event("Fetched Reddit alerts", {"feed": feed_url, "count": len(alerts)})
-
+            url = f"https://www.reddit.com/{sub}/.json?limit=25"
+            r = requests.get(url, headers=UA, timeout=6)
+            if r.status_code == 200:
+                results.extend(_parse_items(r.json(), sub))
         except Exception as e:
-            log_event("Exception during Reddit fetch", {"error": str(e)})
-
-    return alerts
+            log_event("reddit_fetch_error", {"sub": sub, "error": str(e)}, level="WARNING")
+    return results
