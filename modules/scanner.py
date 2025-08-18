@@ -1,30 +1,29 @@
+from __future__ import annotations
+from typing import Dict, Any, List
 import requests
-import json
-from datetime import datetime
-from modules.constants import SCANNER_FEEDS
+
+from modules.constants import SCANNER_JSON_FEEDS
 from modules.utils import log_event
 
-def fetch_scanner_data():
-    """
-    Fetches police scanner data from all defined SCANNER_FEEDS.
-    Each feed should return a JSON object containing active police events.
-    """
-    scanner_events = []
 
-    for feed_url in SCANNER_FEEDS:
+def get_reports(location: Dict[str, float] | None) -> List[Dict[str, Any]]:
+    results: List[Dict[str, Any]] = []
+    for url in SCANNER_JSON_FEEDS:
         try:
-            response = requests.get(feed_url, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                for event in data.get("events", []):
-                    scanner_events.append({
-                        "source": "scanner",
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "event": event
-                    })
-            else:
-                log_event(f"[SCANNER] Failed to fetch {feed_url} - Status code: {response.status_code}")
+            r = requests.get(url, timeout=5)
+            if r.status_code != 200:
+                continue
+            payload = r.json() or {}
+            # Expect schema: [{msg, lat, lon, type, confidence}]
+            for item in payload if isinstance(payload, list) else []:
+                results.append({
+                    "source": "scanner-json",
+                    "type": item.get("type", "police"),
+                    "msg": (item.get("msg") or "")[:200],
+                    "lat": item.get("lat"),
+                    "lon": item.get("lon"),
+                    "confidence": float(item.get("confidence", 0.6)),
+                })
         except Exception as e:
-            log_event(f"[SCANNER] Error fetching {feed_url}: {e}")
-
-    return scanner_events
+            log_event("scanner_json_error", {"url": url, "error": str(e)}, level="WARNING")
+    return results
