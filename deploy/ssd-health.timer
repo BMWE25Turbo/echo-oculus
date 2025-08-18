@@ -1,9 +1,10 @@
 [Unit]
-Description=Run SSD/NVMe health check twice daily
+Description=Run SSD/NVMe health check every 30 minutes
 
 [Timer]
-OnBootSec=10min
-OnUnitActiveSec=12h
+OnBootSec=3min
+OnUnitActiveSec=30min
+Unit=ssd-health.service
 Persistent=true
 
 [Install]
