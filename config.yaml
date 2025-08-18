@@ -20,7 +20,7 @@ echo_oculus:
     rotate_when: midnight           # time-based rotation (midnight)
     rotate_backup_count: 14         # keep 14 daily logs in root_dir
     compress_archives: true         # gzip the rotated files in archive_dir
-    log_retention_days: 180         # hard delete anything older than this in archive_dir
+    log_retention_days: 1095         # hard delete anything older than this in archive_dir
     console: true                   # also log to stdout (useful during dev)
 
   reliability:
